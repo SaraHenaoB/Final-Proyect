@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 class ContentBasedEngine:
     def __init__(
             self,
-            matrix_path = BASE_DIR / "src" / "models" / "content_cosine_sim.joblib",
+            matrix_path=BASE_DIR / "models" / "content_cosine_sim.joblib",
             product_path=BASE_DIR / "data" / "processed" / "product_clean.csv",
     ):
 
