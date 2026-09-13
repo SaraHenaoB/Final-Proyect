@@ -2,3 +2,6 @@
 __pycache__/ 
 *.pyc 
 .ipynb_checkpoints/ 
+mlruns/ 
+data/processed/models/ 
+mlflow.db 

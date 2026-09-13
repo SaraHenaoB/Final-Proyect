@@ -5,18 +5,16 @@ Equipo MetricEdge
 
 
 Este script aplica las reglas de limpieza confirmadas en el EDA primario
-(ver notebooks/PF_01_EDA_Primario.ipynb) y deja guardado en data/processed/
-un dataset limpio de proposito general, listo para el EDA profundo, para
-consultas SQL, o para feature engineering. No construye la matriz de
-interacciones ni calcula metricas de negocio (eso es EDA profundo), solo
-deja los datos correctos y confiables.
+(ver notebooks/01_eda_primario.ipynb) y deja guardado en data/processed/
+un dataset limpio de proposito general, listo para el EDA profundo y para
+el feature engineering del modelo de recomendacion estacional. No calcula
+metricas de negocio (eso es EDA profundo), solo deja los datos correctos
+y confiables.
 
 """
 
 import os
 import pandas as pd
-
-ESTADOS_VALIDOS = ["Completed", "Returned"]
 
 
 # ---------------------------------------------------------------------
@@ -66,7 +64,7 @@ def validar_integridad_referencial(customer, product, order_items, sales):
 
 
 # ---------------------------------------------------------------------
-# TRANSFORMACION (las 8 reglas confirmadas en el EDA primario)
+# TRANSFORMACION (reglas confirmadas en el EDA primario)
 # ---------------------------------------------------------------------
 def deduplicar_order_items(order_items):
     """
@@ -114,7 +112,8 @@ def recategorizar_nulos_estructurales(sales):
     faltante). Se recategorizan en vez de imputarse con un valor generico.
     Los nulos de posventa (regla 5) no se tocan aca: se documentan pero no
     se imputan, porque desaparecen naturalmente al aplicar el filtro de
-    order_status en construir_interacciones_limpias().
+    order_status del modelo que consuma estos datos (Completed unicamente
+    para el modelo estacional vigente).
     """
     sales = sales.copy()
     sales["return_status"] = sales["return_status"].fillna("Sin devolucion")
@@ -155,43 +154,30 @@ def excluir_clientes_sin_ordenes(customer, sales):
     return customer
 
 
-def construir_interacciones_limpias(order_items_dedup, sales_transformado):
-    """
-    Regla 2: aplica el filtro de order_status (solo Completed y Returned
-    cuentan como interaccion real) y deja una tabla de interacciones ya
-    deduplicada y filtrada, lista para que el EDA profundo o el feature
-    engineering la usen sin tener que repetir esta logica.
-    """
-    interacciones = order_items_dedup.merge(
-        sales_transformado[["order_id", "customer_id", "order_date", "order_status"]],
-        on="order_id", how="left"
-    )
-    interacciones = interacciones[interacciones["order_status"].isin(ESTADOS_VALIDOS)].copy()
-    return interacciones
-
-
 def transformar_datos(customer, product, order_items, sales):
     """
-    Orquesta las 8 reglas de limpieza sobre las tablas ya extraidas y
-    tipificadas. Retorna las tablas limpias mas la tabla de interacciones
-    ya lista.
+    Orquesta las reglas de limpieza sobre las tablas ya extraidas y
+    tipificadas. Retorna las 4 tablas limpias. No construye ninguna matriz
+    de interacciones: el filtro de order_status (Completed unicamente,
+    decision confirmada con el Product Owner para el modelo de
+    recomendacion estacional) lo aplica cada script de feature engineering
+    que consuma estos datos, no el ETL.
     """
     order_items_dedup = deduplicar_order_items(order_items)
     sales_transformado = recategorizar_nulos_estructurales(sales)
     sales_transformado = recalcular_customer_order_count(sales_transformado)
     customer_transformado = excluir_clientes_sin_ordenes(customer, sales_transformado)
-    interacciones = construir_interacciones_limpias(order_items_dedup, sales_transformado)
 
-    return customer_transformado, product, order_items_dedup, sales_transformado, interacciones
+    return customer_transformado, product, order_items_dedup, sales_transformado
 
 
 # ---------------------------------------------------------------------
 # CARGA (guardar el dataset limpio)
 # ---------------------------------------------------------------------
-def guardar_datos_limpios(customer, product, order_items, sales, interacciones):
+def guardar_datos_limpios(customer, product, order_items, sales):
     """
     Guarda las tablas ya transformadas en data/processed/, en formato CSV,
-    listas para el EDA profundo, para SQL, o para feature engineering.
+    listas para el EDA profundo o para el feature engineering.
     """
     os.makedirs("data/processed", exist_ok=True)
 
@@ -199,7 +185,6 @@ def guardar_datos_limpios(customer, product, order_items, sales, interacciones):
     product.to_csv("data/processed/product_clean.csv", index=False)
     order_items.to_csv("data/processed/order_items_clean.csv", index=False)
     sales.to_csv("data/processed/sales_clean.csv", index=False)
-    interacciones.to_csv("data/processed/interacciones_clean.csv", index=False)
 
 
 # ---------------------------------------------------------------------
@@ -220,21 +205,19 @@ def ejecutar_etl():
         estado = "OK" if resultado == 0 else "REVISAR"
         print(f"[{estado}] {chequeo}: {resultado}")
 
-    print("\n=== ETL: Transformacion (8 reglas confirmadas en el EDA primario) ===")
-    customer, product, order_items, sales, interacciones = transformar_datos(
+    print("\n=== ETL: Transformacion (reglas confirmadas en el EDA primario) ===")
+    customer, product, order_items, sales = transformar_datos(
         customer, product, order_items, sales
     )
     print(f"order_items tras deduplicar        : {order_items.shape[0]} filas")
-    print(f"interacciones tras filtrar status  : {interacciones.shape[0]} filas")
     print(f"clientes sin ninguna orden marcados: {(~customer['tiene_ordenes']).sum()}")
 
     print("\n=== ETL: Carga (guardando en data/processed/) ===")
-    guardar_datos_limpios(customer, product, order_items, sales, interacciones)
+    guardar_datos_limpios(customer, product, order_items, sales)
     print("Archivos guardados en data/processed/:")
-    print("  customer_clean.csv, product_clean.csv, order_items_clean.csv,")
-    print("  sales_clean.csv, interacciones_clean.csv")
+    print("  customer_clean.csv, product_clean.csv, order_items_clean.csv, sales_clean.csv")
 
-    return customer, product, order_items, sales, interacciones
+    return customer, product, order_items, sales
 
 
 if __name__ == "__main__":
