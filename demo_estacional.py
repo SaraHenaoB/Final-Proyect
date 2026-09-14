@@ -15,6 +15,7 @@ Para correr:
 import sys
 import os
 import numpy as np
+from datetime import date
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
@@ -27,7 +28,7 @@ from ft_engineering_model_recomendacion_estacional import (
     prepare_product_sales,
     aggregate_monthy_category,
 )
-from cargar_modelo import cargar_modelo_estacional
+from cargar_modelo import cargar_modelo_estacional, predecir_fecha
 from drift_utils import calcular_psi, calcular_ks, calcular_js, calcular_chi2, clasificar_alerta_psi
 
 st.set_page_config(page_title="MetricEdge - Recomendacion Estacional", layout="wide")
@@ -70,33 +71,224 @@ tab_recomendacion, tab_validacion, tab_drift = st.tabs(
 with tab_recomendacion:
     st.header("Recomendación de stock para la próxima temporada alta")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Top-5 categorías a reforzar")
-        top5_cat = modelo["category_ranking"].head(5)
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.barh(top5_cat.index[::-1], top5_cat.values[::-1], color="#2E86AB")
-        ax.set_xlabel("Ventas netas históricas ($)")
-        st.pyplot(fig)
+    # Agregando bloque en streamlit para que se pueda ingresar fecha y que realice predicción
+    MESES_ES = {
+        1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+        5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+        9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+    }
 
-    with col2:
-        st.subheader("Pronóstico de demanda")
-        st.dataframe(modelo["forecast"], hide_index=True)
-        c1, c2, c3 = st.columns(3)
-        c1.metric("MAE", f"${modelo['metrics']['MAE']:,.0f}")
-        c2.metric("MAPE", f"{modelo['metrics']['MAPE (%)']:.2f}%")
-        c3.metric("R²", f"{modelo['metrics']['R2']:.3f}")
+    ultimo_mes_entrenamiento = pd.to_datetime(
+        monthly_global["year_month"].astype(str)
+    ).max()
+    primer_mes_futuro = (
+        ultimo_mes_entrenamiento + pd.offsets.MonthBegin(1)
+    ).date()
 
-    st.subheader("Productos destacados dentro de cada categoría top")
-    for categoria in top5_cat.index:
-        with st.expander(f"{categoria}"):
-            top_prod = (
-                product_sales[product_sales.product_category == categoria]
-                .groupby("product_name")["net_sales"].sum()
-                .sort_values(ascending=False).head(3)
+    anio_default = primer_mes_futuro.year
+    if primer_mes_futuro.month > 11:
+        anio_default += 1
+
+    fecha_default = date(anio_default, 11, 1)
+
+    fecha_prediccion = st.date_input(
+        "📅 Seleccione la fecha que desea estimar",
+        value=fecha_default,
+        min_value=primer_mes_futuro,
+        help=(
+            "El modelo es mensual y estacional. La predicción depende del mes "
+            "seleccionado, no del día específico."
+        ),
+    )
+
+    prediccion = predecir_fecha(modelo, fecha_prediccion)
+
+    pc1, pc2, pc3 = st.columns(3)
+    pc1.metric("Fecha seleccionada", fecha_prediccion.strftime("%d/%m/%Y"))
+    pc2.metric("Mes", MESES_ES[fecha_prediccion.month])
+    pc3.metric("Ventas netas estimadas", f"${prediccion:,.0f}")
+
+
+    if fecha_prediccion.month in [11, 12]:
+        st.success(
+            "📈 La fecha seleccionada pertenece a la temporada alta "
+            "(noviembre-diciembre)."
+        )
+    else:
+        st.info(
+            "La fecha seleccionada está fuera de la temporada alta; "
+            "se muestra la estimación mensual basada en el patrón histórico."
+        )
+
+    st.caption(
+        "Importante: Seasonal Naive predice a nivel mensual. "
+        "Por ejemplo, 05/11 y 25/11 reciben la misma predicción porque "
+        "ambas pertenecen a noviembre."
+    )
+
+    st.divider()
+
+    mes_seleccionado = fecha_prediccion.month
+    nombre_mes = MESES_ES[mes_seleccionado]
+
+    product_sales_mes = product_sales[
+        product_sales["order_date"].dt.month == mes_seleccionado
+    ].copy()
+
+    if product_sales_mes.empty:
+        st.warning(
+            f"No hay ventas históricas disponibles para {nombre_mes}. "
+            "No se pueden generar recomendaciones estacionales para ese mes."
+        )
+    else:
+        # Top-5 categorías para el mes seleccionado
+        top5_cat = (
+            product_sales_mes
+            .groupby("product_category")["net_sales"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(5)
+        )
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader(f"Top-5 stock de categorías — {nombre_mes}")
+            fig, ax = plt.subplots(figsize=(6, 4))
+            ax.barh(top5_cat.index[::-1], top5_cat.values[::-1], color="#2E86AB")
+            ax.set_xlabel(f"Ventas netas históricas de {nombre_mes} ($)")
+            ax.set_title(f"Comportamiento histórico de {nombre_mes}")
+            st.pyplot(fig)
+
+        with col2:
+            st.subheader("Pronóstico de demanda")
+            forecast_seleccionado = pd.DataFrame({
+                "periodo": [fecha_prediccion.strftime("%Y-%m")],
+                "prediccion_net_sales": [prediccion],
+            })
+            st.dataframe(forecast_seleccionado, hide_index=True)
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("MAE", f"${modelo['metrics']['MAE']:,.0f}")
+            c2.metric("MAPE", f"{modelo['metrics']['MAPE (%)']:.2f}%")
+            c3.metric("R²", f"{modelo['metrics']['R2']:.3f}")
+
+            st.caption(
+                "Las métricas MAE, MAPE y R² corresponden a la validación global "
+                "del modelo y no cambian al seleccionar una fecha."
             )
-            for nombre, valor in top_prod.items():
-                st.write(f"• {nombre} — ${valor:,.0f}")
+
+        col_resumen, col_productos = st.columns(2)
+
+        # Obtener la principal categoría, subcategoría y producto del mes
+        categoria_principal = top5_cat.index[0] if len(top5_cat) > 0 else "N/D"
+        datos_principal = product_sales_mes[
+            product_sales_mes["product_category"] == categoria_principal
+        ].copy()
+
+        if not datos_principal.empty and "product_subcategory" in datos_principal.columns:
+            datos_principal["product_subcategory"] = (
+                datos_principal["product_subcategory"].fillna("Sin subcategoría")
+            )
+            top_subcat_resumen = (
+                datos_principal
+                .groupby("product_subcategory")["net_sales"]
+                .sum()
+                .sort_values(ascending=False)
+            )
+            subcategoria_principal = (
+                top_subcat_resumen.index[0] if len(top_subcat_resumen) > 0 else "N/D"
+            )
+        else:
+            subcategoria_principal = "N/D"
+
+        if not datos_principal.empty:
+            top_prod_resumen = (
+                datos_principal
+                .groupby("product_name")["net_sales"]
+                .sum()
+                .sort_values(ascending=False)
+            )
+            producto_principal = (
+                top_prod_resumen.index[0] if len(top_prod_resumen) > 0 else "N/D"
+            )
+        else:
+            producto_principal = "N/D"
+
+        with col_resumen:
+            st.subheader("📋 Resumen de la recomendación")
+            st.caption(
+                f"Resumen para {nombre_mes} basado en las ventas históricas "
+                "de los años disponibles."
+            )
+
+            st.metric("💰 Ventas netas estimadas", f"${prediccion:,.0f}")
+            st.write(f"**🏆 Categoría principal:** {categoria_principal}")
+            st.write(f"**📂 Subcategoría principal:** {subcategoria_principal}")
+            st.write(f"**📦 Producto principal:** {producto_principal}")
+
+            if mes_seleccionado in [11, 12]:
+                st.success(
+                    "📈 Temporada alta: se recomienda priorizar inventario "
+                    "en las categorías y productos destacados."
+                )
+            else:
+                st.info(
+                    "📊 Temporada regular: las recomendaciones se basan en "
+                    "el comportamiento histórico de este mes."
+                )
+
+        with col_productos:
+            st.subheader(
+                f"📦 Productos y subcategorías recomendados para {nombre_mes}"
+            )
+            st.caption(
+                f"Las recomendaciones se obtienen a partir de las ventas históricas "
+                f"de {nombre_mes} en los años disponibles."
+            )
+
+            for categoria in top5_cat.index:
+                with st.expander(f"📦 {categoria}"):
+                    datos_categoria = product_sales_mes[
+                        product_sales_mes["product_category"] == categoria
+                    ].copy()
+
+                    # Top-3 subcategorías dentro de la categoría para el mes seleccionado
+                    if "product_subcategory" in datos_categoria.columns:
+                        datos_categoria["product_subcategory"] = (
+                            datos_categoria["product_subcategory"]
+                            .fillna("Sin subcategoría")
+                        )
+
+                        top_subcat = (
+                            datos_categoria
+                            .groupby("product_subcategory")["net_sales"]
+                            .sum()
+                            .sort_values(ascending=False)
+                            .head(3)
+                        )
+
+                        st.write("**Subcategorías a priorizar:**")
+                        for subcat, valor_subcat in top_subcat.items():
+                            st.write(
+                                f"• {subcat} — ventas históricas de {nombre_mes}: "
+                                f"${valor_subcat:,.0f}"
+                            )
+
+                    # Top-3 productos dentro de la categoría para el mes seleccionado
+                    top_prod = (
+                        datos_categoria
+                        .groupby("product_name")["net_sales"]
+                        .sum()
+                        .sort_values(ascending=False)
+                        .head(3)
+                    )
+
+                    st.write("**Productos a priorizar:**")
+                    for nombre, valor in top_prod.items():
+                        st.write(
+                            f"• {nombre} — ventas históricas de {nombre_mes}: "
+                            f"${valor:,.0f}"
+                        )
 
 # =======================================================================
 # TAB 2: Validacion historica en vivo (Precision@5 categoria, walk-forward)

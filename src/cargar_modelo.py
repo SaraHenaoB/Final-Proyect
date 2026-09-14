@@ -12,6 +12,7 @@ por dentro, solo hay que tocar este archivo, no la demo ni el drift.
 import os
 import joblib
 import pandas as pd
+from datetime import date
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "src", "models", "seasonal_recommendation_model.joblib")
@@ -46,6 +47,19 @@ def cargar_modelo_estacional(model_path: str = MODEL_PATH) -> dict:
         "forecast": forecast,
     }
 
+def predecir_fecha(modelo: dict, fecha: date) -> float:
+    """ Genera predicción mensual para una fecha usando el modelo entrenado.
+    Seasonal Naive predice mes a mes, NO dia por dia"""
+
+    mes = int(fecha.month)
+    monthly_means = modelo["monthly_means"]
+
+    if mes not in monthly_means.index:
+        raise ValueError(
+            f"No existe una media historica entrenada para este mes"
+        )
+
+    return float(monthly_means.loc[mes])
 
 if __name__ == "__main__":
     modelo = cargar_modelo_estacional()
