@@ -58,7 +58,7 @@ def cargar_modelo():
 sales, product_sales, monthly_global, monthly_category = cargar_todo()
 modelo = cargar_modelo()
 
-st.title("Sistema de Recomendación Estacional por Categoría")
+st.title("Sistema de Predicción de Stock")
 st.caption("Equipo MetricEdge — Proyecto Final Data Science")
 
 tab_recomendacion, tab_validacion, tab_drift = st.tabs(
@@ -89,17 +89,33 @@ with tab_recomendacion:
     if primer_mes_futuro.month > 11:
         anio_default += 1
 
-    fecha_default = date(anio_default, 11, 1)
+    # El modelo es mensual: el dia no influye en la prediccion, asi que se
+    # seleccionan solo mes y anio, para no sugerir una precision que no existe.
+    anios_disponibles = list(range(primer_mes_futuro.year, primer_mes_futuro.year + 5))
 
-    fecha_prediccion = st.date_input(
-        "📅 Seleccione la fecha que desea estimar",
-        value=fecha_default,
-        min_value=primer_mes_futuro,
-        help=(
-            "El modelo es mensual y estacional. La predicción depende del mes "
-            "seleccionado, no del día específico."
-        ),
-    )
+    col_mes, col_anio = st.columns(2)
+    with col_mes:
+        mes_elegido = st.selectbox(
+            "📅 Mes a estimar",
+            options=list(MESES_ES.keys()),
+            index=10,  # Noviembre por defecto (inicio de temporada alta)
+            format_func=lambda m: MESES_ES[m],
+        )
+    with col_anio:
+        anio_elegido = st.selectbox(
+            "📅 Año a estimar",
+            options=anios_disponibles,
+            index=anios_disponibles.index(anio_default) if anio_default in anios_disponibles else 0,
+        )
+
+    fecha_prediccion = date(anio_elegido, mes_elegido, 1)
+
+    if fecha_prediccion < primer_mes_futuro:
+        st.warning(
+            f"El periodo seleccionado ({MESES_ES[mes_elegido]} {anio_elegido}) ya esta dentro "
+            f"del historico de entrenamiento. Elige un periodo posterior a "
+            f"{MESES_ES[primer_mes_futuro.month]} {primer_mes_futuro.year} para una prediccion futura."
+        )
 
     prediccion = predecir_fecha(modelo, fecha_prediccion)
 
@@ -121,9 +137,8 @@ with tab_recomendacion:
         )
 
     st.caption(
-        "Importante: Seasonal Naive predice a nivel mensual. "
-        "Por ejemplo, 05/11 y 25/11 reciben la misma predicción porque "
-        "ambas pertenecen a noviembre."
+        "El modelo predice a nivel mensual: la estimación corresponde al mes "
+        "completo seleccionado, no a un día en particular."
     )
 
     st.divider()
