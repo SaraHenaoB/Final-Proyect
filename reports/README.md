@@ -1,6 +1,6 @@
 # Informe Técnico — MetricEdge
 
-**Sistema de Recomendación Estacional de Stock — documentación completa del proceso**
+**Sistema de Predicción de Stock — documentación completa del proceso**
 
 [⬅ Volver al README principal](../README.md)
 
@@ -10,7 +10,7 @@
 
 MetricEdge es un proyecto de ciencia de datos end-to-end construido para una empresa ficticia de e-commerce. El objetivo original era un recomendador de productos personalizado, por cliente. Tras un análisis exploratorio riguroso, los datos mostraron que las interacciones cliente-producto en este dataset **no tienen señal individual explotable** — hallazgo validado con tres enfoques de clasificación independientes (ver [Comparación de modelos](#-comparación-de-modelos) más abajo).
 
-En vez de forzar una solución débil, el equipo redirigió el esfuerzo hacia el problema donde los datos **sí** mostraban un patrón fuerte y validado: la **demanda estacional**. El resultado es un **sistema de recomendación de stock estacional** que le indica a un retailer qué categorías de producto priorizar — y cuánta demanda esperar — antes de los meses de alta temporada (noviembre-diciembre).
+En vez de forzar una solución débil, el equipo redirigió el esfuerzo hacia el problema donde los datos **sí** mostraban un patrón fuerte y validado: la **demanda por categoría a lo largo del año**. El resultado es un **sistema de predicción de stock** que le indica a un retailer qué categorías de producto priorizar — y cuánta demanda esperar — durante todo el año, incluyendo los meses de alta temporada (noviembre-diciembre).
 
 Este documento cubre el proceso completo: calidad de datos, limpieza (ETL), análisis exploratorio de negocio, comparación de los 3 modelos candidatos con evaluación honesta (incluyendo dos fugas de datos encontradas y corregidas en el camino), y el pipeline construido sobre el modelo elegido.
 
@@ -86,9 +86,9 @@ Se plantearon y evaluaron tres problemas de negocio bajo el mismo rigor: **split
 
 **Veredicto: señal débil, pero presente.** El mejor modelo detecta el 61.7% de las devoluciones reales (Recall), con precisión baja. Es el único candidato con algo de poder de discriminación por encima del azar — no suficiente para ser la base de un producto por sí solo.
 
-### Modelo 3 — Recomendación estacional de stock ✅ *Elegido*
+### Modelo 3 — Predicción de Stock ✅ *Elegido*
 
-**Pregunta de negocio:** ¿qué categorías conviene reforzar y cuánto volumen de demanda esperar antes de la próxima temporada alta? Dos componentes — ranking estacional y pronóstico de demanda — validados con **backtesting rolling** sobre varios años.
+**Pregunta de negocio:** ¿cuánto stock necesito por categoría el próximo mes? Dos componentes — ranking de categorías y pronóstico de demanda — validados con **backtesting rolling** sobre varios años.
 
 | Métrica | Resultado |
 |---|---|
@@ -103,15 +103,15 @@ Se plantearon y evaluaron tres problemas de negocio bajo el mismo rigor: **split
 
 ### Resumen ejecutivo
 
-| Problema | Mejor resultado (sin fuga) | ¿Hay señal real? |
-|---|---|---|
-| Retrasos en la entrega | ROC-AUC ≈ 0.50 | No |
-| Devoluciones | ROC-AUC ≈ 0.60 | Muy débil |
-| **Recomendación estacional de stock** | **Precision@5 = 100%, R² = 0.984** | **Sí — fuerte y estable** |
+| Modelo | Pregunta que responde | Precision | ¿Señal real? |
+|---|---|---|---|
+| Predicción de retrasos en la entrega | ¿Este pedido va a llegar tarde? | 14.7% | No |
+| Predicción de devoluciones | ¿Este pedido va a ser devuelto? | 9.0% | Muy débil |
+| **Predicción de Stock** | ¿Cuánto stock necesito por categoría el próximo mes? | **Precision@5: 100%** | **Sí — fuerte y estable** |
 
-Los tres resultados son consistentes entre sí y con el resto del análisis del dataset: este dataset simulado no codifica una relación causal genuina entre las variables disponibles y estos resultados de negocio a nivel individual (retrasos, devoluciones), salvo por un par de variables que resultaron ser fuga de información. Donde sí hay señal real y aprovechable es en la **demanda estacional agregada por categoría** — un patrón consistente y genuino a lo largo de 5 años de historia.
+El modelo de Predicción de Stock no es un clasificador (no tiene ROC-AUC) — es un ranking + pronóstico, por eso se mide con Precision@K, MAPE y R² en vez de ROC-AUC/PR-AUC. Los tres resultados son consistentes entre sí y con el resto del análisis del dataset: este dataset simulado no codifica una relación causal genuina entre las variables disponibles y estos resultados de negocio a nivel individual (retrasos, devoluciones), salvo por un par de variables que resultaron ser fuga de información. Donde sí hay señal real y aprovechable es en la **demanda agregada por categoría a lo largo del año** — un patrón consistente y genuino en los 5 años de historia disponibles.
 
-**Decisión:** el equipo avanzó con el **Modelo 3 — Recomendación estacional de stock** como el candidato más defendible para una implementación de negocio real. Los modelos de retrasos y devoluciones quedan documentados como hallazgos exploratorios, a revisitar si se dispusiera de datos operativos más ricos.
+**Decisión:** el equipo avanzó con el **Modelo 3 — Predicción de Stock** como el candidato más defendible para una implementación de negocio real. Los modelos de retrasos y devoluciones quedan documentados como hallazgos exploratorios, a revisitar si se dispusiera de datos operativos más ricos.
 
 ---
 
