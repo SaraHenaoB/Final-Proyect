@@ -95,11 +95,11 @@ Se plantearon y evaluaron tres problemas de negocio bajo el mismo rigor: **split
 | Precision@5 (categoría) | **100%** — 4 de 4 años de backtesting (2022-2025) |
 | Precision@10 (producto) | 50% |
 | Precision@20 (producto) | 56.25% |
-| MAE del pronóstico | **$71.815** |
-| MAPE del pronóstico | **2.47%** |
-| R² del pronóstico | **0.984** |
+| MAE del pronóstico | **$55.809** |
+| MAPE del pronóstico | **2.36%** |
+| R² del pronóstico | **0.981** |
 
-**Top-5 categorías a priorizar:** Electronics, Jewelry, Home Appliances, Automotive, Sports & Outdoors — con un pronóstico en vivo de ≈ **$4,3M** (noviembre) y **$4,66M** (diciembre) de demanda esperada para la próxima temporada alta.
+**Top-5 categorías a priorizar:** Electronics, Jewelry, Home Appliances, Automotive, Sports & Outdoors — con un pronóstico en vivo de ≈ **$3,55M** (noviembre) y **$3,78M** (diciembre) de demanda esperada para la próxima temporada alta.
 
 ### Resumen ejecutivo
 

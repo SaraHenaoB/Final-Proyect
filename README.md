@@ -26,7 +26,7 @@ Comparación de los 3 modelos candidatos evaluados (split temporal 80/20, sin fu
 | Predicción de devoluciones | ¿Este pedido va a ser devuelto? | 9.0% | Muy débil |
 | **Predicción de Stock** | ¿Cuánto stock necesito por categoría el próximo mes? | **Precision@5: 100%** | **Sí — fuerte y estable** |
 
-El modelo de Predicción de Stock no es un clasificador (no tiene ROC-AUC) — es un ranking + pronóstico, por eso se mide con Precision@K. Además pronostica la demanda mensual con **2.47% de error (MAPE)** y acierta el Top-5 de categorías en **4 de 4 años** de backtesting, todo el año, no solo en temporada alta. Metodología completa, tablas de cada modelo y análisis de por qué los otros dos no alcanzan, en el informe técnico.
+El modelo de Predicción de Stock no es un clasificador (no tiene ROC-AUC) — es un ranking + pronóstico, por eso se mide con Precision@K. Además pronostica la demanda mensual con **2.36% de error (MAPE)** y acierta el Top-5 de categorías en **4 de 4 años** de backtesting, todo el año, no solo en temporada alta. Metodología completa, tablas de cada modelo y análisis de por qué los otros dos no alcanzan, en el informe técnico.
 
 ## 📚 Informe técnico
 
