@@ -1,32 +1,32 @@
 <p align="center">
-  <img src="assets/banner.png" alt="MetricEdge — Sistema de Recomendación Estacional de Stock" width="100%">
+  <img src="assets/banner.png" alt="MetricEdge — Sistema de Predicción de Stock" width="100%">
 </p>
 
-[![Live Demo](https://img.shields.io/badge/🚀_Demo_en_vivo-Streamlit-FF4B4B?style=for-the-badge)](https://final-proyect-irfde8x9bkbgmatc3ejyq7.streamlit.app/) [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](#) [![License: MIT](https://img.shields.io/badge/Licencia-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/🚀_Demo_en_vivo-Streamlit-FF4B4B?style=for-the-badge)](https://final-proyect-irfde8x9bkbgmatc3ejyq7.streamlit.app/) [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](#)
 
-Sistema que recomienda qué categorías de producto reforzar — y cuánta demanda esperar — antes de la temporada alta de un e-commerce, entrenado y validado sobre datos reales de ventas. Proyecto de referencia académico para la academia **Henry**.
+Sistema que predice cuánto stock se va a necesitar por categoría de producto a lo largo del año — incluyendo los picos de alta demanda — entrenado y validado sobre datos reales de ventas. Proyecto de referencia académico para la academia **Henry**.
 
 ## 🚀 Demo en vivo
 
 **👉 [Abrir la demo en Streamlit](https://final-proyect-irfde8x9bkbgmatc3ejyq7.streamlit.app/)**
 
-Sin instalar nada: elegí un mes futuro y mirá la recomendación de stock por categoría, el pronóstico de demanda, la validación histórica del modelo y el monitoreo de *data drift*.
+Sin instalar nada: elegí cualquier mes y mirá la predicción de stock por categoría, el pronóstico de demanda, la validación histórica del modelo y el monitoreo de *data drift*.
 
 ## 📖 ¿Qué es esto?
 
-El objetivo original del proyecto era un recomendador de productos personalizado, por cliente. El análisis exploratorio mostró que ese dataset **no tiene señal individual explotable** — confirmado comparando tres modelos predictivos distintos bajo el mismo rigor metodológico. En vez de forzar una solución débil, el equipo redirigió el esfuerzo hacia el problema donde los datos sí mostraban un patrón fuerte: la **demanda estacional agregada por categoría**.
+El objetivo original del proyecto era un recomendador de productos personalizado, por cliente. El análisis exploratorio mostró que ese dataset **no tiene señal individual explotable** — confirmado comparando tres modelos predictivos distintos bajo el mismo rigor metodológico. En vez de forzar una solución débil, el equipo redirigió el esfuerzo hacia el problema donde los datos sí mostraban un patrón fuerte: la **predicción de stock por categoría a lo largo de todo el año**, incluyendo — pero sin limitarse a — los meses de alta demanda.
 
 ## 🧪 Resultado principal
 
-Comparación de los 3 modelos candidatos evaluados (split temporal 80/20, sin fuga de datos):
+Comparación de los 3 modelos candidatos evaluados (split temporal 80/20, sin fuga de datos), con Precision como métrica común:
 
-| Modelo | Métrica principal | Resultado | ¿Señal real? |
+| Modelo | Pregunta que responde | Precision | ¿Señal real? |
 |---|---|---|---|
-| Predicción de retrasos en la entrega | ROC-AUC | 0.50 | No |
-| Predicción de devoluciones | ROC-AUC | 0.60 | Muy débil |
-| **Recomendación estacional de stock** | **Precision@5 / R²** | **100% / 0.984** | **Sí — fuerte y estable** |
+| Predicción de retrasos en la entrega | ¿Este pedido va a llegar tarde? | 14.7% | No |
+| Predicción de devoluciones | ¿Este pedido va a ser devuelto? | 9.0% | Muy débil |
+| **Predicción de Stock** | ¿Cuánto stock necesito por categoría el próximo mes? | **Precision@5: 100%** | **Sí — fuerte y estable** |
 
-El modelo elegido pronostica la demanda mensual con **2.47% de error (MAPE)** y acierta el Top-5 de categorías de cada temporada alta en **4 de 4 años** de backtesting. Metodología completa, tablas de cada modelo y análisis de por qué los otros dos no alcanzan, en el informe técnico.
+El modelo de Predicción de Stock no es un clasificador (no tiene ROC-AUC) — es un ranking + pronóstico, por eso se mide con Precision@K. Además pronostica la demanda mensual con **2.47% de error (MAPE)** y acierta el Top-5 de categorías en **4 de 4 años** de backtesting, todo el año, no solo en temporada alta. Metodología completa, tablas de cada modelo y análisis de por qué los otros dos no alcanzan, en el informe técnico.
 
 ## 📚 Informe técnico
 
@@ -54,7 +54,7 @@ Final-Proyect/
 ├── notebooks/
 │   ├── 01_eda_primario.ipynb                          # Diagnóstico de calidad de datos
 │   ├── 02_eda_profundo.ipynb                          # Viabilidad de negocio
-│   ├── 03_propuesta_recomendacion_estacional.ipynb    # Modelo elegido — desarrollo completo
+│   ├── 03_propuesta_prediccion_stock.ipynb            # Modelo elegido — desarrollo completo
 │   ├── 04_evaluacion_metricas_estacional.ipynb        # Comparación de los 3 modelos
 │   └── 05_modelo_pronostico_demanda.ipynb             # Detalle del componente de pronóstico
 ├── src/
@@ -115,10 +115,6 @@ Numerados y secuenciales — el detalle narrativo de cada uno está en el [infor
 - Automatizar el reentrenamiento periódico del modelo a medida que ingresan nuevos datos de venta
 - Convertir el monitoreo de drift en un job programado con notificaciones
 - Revisitar la predicción de riesgo de devolución si se dispone de features operativas más ricas
-
-## 📄 Licencia
-
-MIT — ver [LICENSE](LICENSE).
 
 ## 📬 Contacto
 
