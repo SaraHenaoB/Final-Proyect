@@ -34,6 +34,10 @@ Este README es una guía rápida. Para el análisis completo — calidad de dato
 
 **👉 [Consultar el Informe Técnico completo](reports/README.md)**
 
+## 🎤 Presentación
+
+**👉 [Ver la presentación completa (Demo Final)](presentation/Demo_Final.pptx)**
+
 ## 🛠️ Tecnologías utilizadas
 
 `pandas` / `numpy` (procesamiento) · `scikit-learn` / `LightGBM` (modelado) · `statsmodels` (pronóstico) · `MLflow` (tracking de experimentos) · `Streamlit` (demo funcional) · `Power BI` (dashboard de negocio) · `Jupyter` (análisis)
@@ -67,6 +71,8 @@ Final-Proyect/
 │       └── seasonal_recommendation_model.joblib
 ├── dashboard/
 │   └── e_commerce_dashboard.pbix                       # Dashboard de negocio (Power BI)
+├── presentation/
+│   └── Demo_Final.pptx                                 # Presentación completa (Demo Final)
 ├── reports/
 │   └── README.md                                       # Informe técnico completo
 ├── docs/                                               # Documentación extendida por etapa
