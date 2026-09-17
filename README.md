@@ -110,6 +110,16 @@ jupyter notebook notebooks/01_eda_primario.ipynb
 
 Numerados y secuenciales — el detalle narrativo de cada uno está en el [informe técnico](reports/README.md).
 
+## 👥 Equipo
+
+| Integrante | Rol | LinkedIn |
+|---|---|---|
+| Christian Tamayo | Data Scientist | [LinkedIn](https://www.linkedin.com/in/cantamayo21/) |
+| Deiberlyn Nin | Data Scientist | [LinkedIn](https://www.linkedin.com/in/deiberlyn-nin-b893b1432/) |
+| Sarah Henao | Scrum Master | [LinkedIn](https://www.linkedin.com/in/sarahenao/) |
+| Simón Bedoya | Data Scientist | [LinkedIn](https://www.linkedin.com/in/sim%C3%B3n-bedoya-05bb57398/) |
+| Verónica Iacono | Data Scientist | [LinkedIn](https://www.linkedin.com/in/veronica-iacono-69b0671a3/) |
+
 ## 🔭 Próximas mejoras
 
 - Automatizar el reentrenamiento periódico del modelo a medida que ingresan nuevos datos de venta
